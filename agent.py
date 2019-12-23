@@ -1,5 +1,19 @@
 from gameobjects import GameObject
 from move import Move, Direction
+import numpy as np
+
+
+class Node:
+    def __init__(self, parent=None, position=None):
+        self.parent = parent
+        self.position = position
+
+        self.g = 0
+        self.f = 0
+        self.h = 0
+
+    def __eq__(self, other):
+        return self.position == other.position
 
 
 class Agent:
@@ -8,6 +22,9 @@ class Agent:
         """" Constructor of the Agent, can be used to set up variables """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
+        # for i in range(0, 25):
+        #     for j in range(0, 25):
+        #         print("i = "+str(i)+"; j = "+str(j)+"; "+str(board[i][j]))
         """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
         the project. Every turn the agent needs to return a move. This move will be executed by the snake. If this
         functions fails to return a valid return (see return), the snake will die (as this confuses its tiny brain
@@ -48,7 +65,19 @@ class Agent:
         Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
         move left is made, the snake will go one block to the left and change its direction to west.
         """
+
+
         return Move.STRAIGHT
+
+    def create_maze_from_board(self, board):
+        maze = []
+        print("Ok, this works")
+        for i in range(0, 25):
+            for j in range(0, 25):
+                print("i = "+str(i)+"; j = "+str(j)+"; "+str(board[i][j]))
+
+    def return_path(self, board):
+        path = []
 
     def should_redraw_board(self):
         """

@@ -6,6 +6,7 @@ from move import Direction, Move
 
 
 class Snake:
+    global b;
     def __init__(self, board_width, board_height, max_tics_to_starve):
         self.board_width = board_width
         self.board_height = board_height
