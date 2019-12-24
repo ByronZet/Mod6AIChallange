@@ -53,7 +53,7 @@ def main():
     snake = Snake(board_width, board_height, starvation_tics)
     board = Board(board_width, board_height, canvas_width, canvas_height, snake, food_blocks_max, wall_blocks_max,
                   test_config)
-    snake.agent.create_maze_from_board(board.get_copy())
+    snake.agent.create_maze_from_board(board.get_copy(), board_width, board_height)
     board.draw(canvas)
     canvas.after(int(1000 / tics_per_second), game_loop)
     mainloop()
