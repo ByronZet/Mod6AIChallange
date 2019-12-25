@@ -24,105 +24,199 @@ class Agent:
 
     def __init__(self):
         self.maze = []
+        self.start = []
+        self.end = []
         self.cost = 1
+        self.board = None
         self.board_width = None
         self.board_height = None
         self.steps_done = 0
+        self.body_parts = 0
+        self.directions = []
+        self.path = []
+        self.movements = []
+        self.switch = 0
         """" Constructor of the Agent, can be used to set up variables """
 
-    def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
-        # for i in range(0, 25):
-        #     for j in range(0, 25):
-        self.path = self.search(self.cost, self.start, self.end)
+    def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):  # TODO: end point nu ii pe food, fix it
+        # self.create_maze_from_board(board, self.board_width, self.board_height)
+        print("switch = " + str(self.switch))
+        if self.path == [] and self.switch == 0:
+            self.path = self.search(self.cost, self.start, self.end)
+        else:
+            self.path = self.search(self.cost, self.start, self.end)
         total_steps = -2
         for i in range(0, self.board_width):
             for j in range(0, self.board_height):
                 if self.path[i][j] > total_steps:
                     total_steps = self.path[i][j]
-        dir = self.find_direction_from_path(direction, total_steps)
-        print("path = "+str(self.path))
-        #         print("i = "+str(i)+"; j = "+str(j)+"; "+str(board[i][j]))
+        print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
+                         for row in self.path]))
+        # print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
+        #                  for row in self.maze]))
+        if self.directions == [] and self.switch == 0:
+            self.directions = self.look_for_next_step(direction, self.steps_done)
+
+        print("dir = " + str(self.directions))
+        if self.steps_done < total_steps:
+            try:
+                temp = self.directions[0]
+                self.directions.pop(0)
+            except:
+                print("something went wrong")
+            self.steps_done += 1
+            return temp
+        return Move.STRAIGHT
+
+        # noinspection PyUnreachableCode
         """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
-        the project. Every turn the agent needs to return a move. This move will be executed by the snake. If this
-        functions fails to return a valid return (see return), the snake will die (as this confuses its tiny brain
-        that much that it will explode). The starting direction of the snake will be North.
+                the project. Every turn the agent needs to return a move. This move will be executed by the snake. If this
+                functions fails to return a valid return (see return), the snake will die (as this confuses its tiny brain
+                that much that it will explode). The starting direction of the snake will be North.
+        
+                :param board: A two dimensional array representing the current state of the board. The upper left most
+                coordinate is equal to (0,0) and each coordinate (x,y) can be accessed by executing board[x][y]. At each
+                coordinate a GameObject is present. This can be either GameObject.EMPTY (meaning there is nothing at the
+                given coordinate), GameObject.FOOD (meaning there is food at the given coordinate), GameObject.WALL (meaning
+                there is a wall at the given coordinate. TIP: do not run into them), GameObject.SNAKE_HEAD (meaning the head
+                of the snake is located there) and GameObject.SNAKE_BODY (meaning there is a body part of the snake there.
+                TIP: also, do not run into these). The snake will also die when it tries to escape the board (moving out of
+                the boundaries of the array)
+        
+                :param score: The current score as an integer. Whenever the snake eats, the score will be increased by one.
+                When the snake tragically dies (i.e. by running its head into a wall) the score will be reset. In ohter
+                words, the score describes the score of the current (alive) worm.
+        
+                :param turns_alive: The number of turns (as integer) the current snake is alive.
+        
+                :param turns_to_starve: The number of turns left alive (as integer) if the snake does not eat. If this number
+                reaches 1 and there is not eaten the next turn, the snake dies. If the value is equal to -1, then the option
+                is not enabled and the snake can not starve.
+        
+                :param direction: The direction the snake is currently facing. This can be either Direction.NORTH,
+                Direction.SOUTH, Direction.WEST, Direction.EAST. For instance, when the snake is facing east and a move
+                straight is returned, the snake wil move one cell to the right.
+        
+                :param head_position: (x,y) of the head of the snake. The following should always hold: board[head_position[
+                0]][head_position[1]] == GameObject.SNAKE_HEAD.
+        
+                :param body_parts: the array of the locations of the body parts of the snake. The last element of this array
+                represents the tail and the first element represents the body part directly following the head of the snake.
+        
+                :return: The move of the snake. This can be either Move.LEFT (meaning going left), Move.STRAIGHT (meaning
+                going straight ahead) and Move.RIGHT (meaning going right). The moves are made from the viewpoint of the
+                snake. This means the snake keeps track of the direction it is facing (North, South, West and East).
+                Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
+                move left is made, the snake will go one block to the left and change its direction to west.
+                """
 
-        :param board: A two dimensional array representing the current state of the board. The upper left most
-        coordinate is equal to (0,0) and each coordinate (x,y) can be accessed by executing board[x][y]. At each
-        coordinate a GameObject is present. This can be either GameObject.EMPTY (meaning there is nothing at the
-        given coordinate), GameObject.FOOD (meaning there is food at the given coordinate), GameObject.WALL (meaning
-        there is a wall at the given coordinate. TIP: do not run into them), GameObject.SNAKE_HEAD (meaning the head
-        of the snake is located there) and GameObject.SNAKE_BODY (meaning there is a body part of the snake there.
-        TIP: also, do not run into these). The snake will also die when it tries to escape the board (moving out of
-        the boundaries of the array)
-
-        :param score: The current score as an integer. Whenever the snake eats, the score will be increased by one.
-        When the snake tragically dies (i.e. by running its head into a wall) the score will be reset. In ohter
-        words, the score describes the score of the current (alive) worm.
-
-        :param turns_alive: The number of turns (as integer) the current snake is alive.
-
-        :param turns_to_starve: The number of turns left alive (as integer) if the snake does not eat. If this number
-        reaches 1 and there is not eaten the next turn, the snake dies. If the value is equal to -1, then the option
-        is not enabled and the snake can not starve.
-
-        :param direction: The direction the snake is currently facing. This can be either Direction.NORTH,
-        Direction.SOUTH, Direction.WEST, Direction.EAST. For instance, when the snake is facing east and a move
-        straight is returned, the snake wil move one cell to the right.
-
-        :param head_position: (x,y) of the head of the snake. The following should always hold: board[head_position[
-        0]][head_position[1]] == GameObject.SNAKE_HEAD.
-
-        :param body_parts: the array of the locations of the body parts of the snake. The last element of this array
-        represents the tail and the first element represents the body part directly following the head of the snake.
-
-        :return: The move of the snake. This can be either Move.LEFT (meaning going left), Move.STRAIGHT (meaning
-        going straight ahead) and Move.RIGHT (meaning going right). The moves are made from the viewpoint of the
-        snake. This means the snake keeps track of the direction it is facing (North, South, West and East).
-        Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
-        move left is made, the snake will go one block to the left and change its direction to west.
-        """
-
-
-        return Move.LEFT
+    def recalculate_path(self):
+        self.create_maze_from_board(self.board, self.board_width, self.board_height)
+        self.path = self.search(self.cost, self.start, self.end)
 
     def create_maze_from_board(self, board, board_width, board_height):
-        self.start = []
-        self.end = []
-        self.board_width = board_width
-        self.board_height = board_height
-        for i in range(0, board_width):
+        if self.board_width is None or self.board_height is None or self.board is None:
+            self.board_width = board_width
+            self.board_height = board_height
+            self.board = board
+        self.maze = []
+        for i in range(board_height):
             row = []
-            for j in range(0, board_height):
-                if(board[i][j] == GameObject.EMPTY):
+            for j in range(board_width):
+                if board[j][i] == GameObject.EMPTY:
                     row.append(0)
-                elif(board[i][j] == GameObject.WALL or board[i][j] == GameObject.SNAKE_BODY): #or  or board[i][j] == GameObject.SNAKE_HEAD
-                    row.append(1)
-                elif(board[i][j] == GameObject.SNAKE_HEAD):
+                elif board[j][i] == GameObject.SNAKE_HEAD:
                     self.start = (i, j)
-                elif(board[i][j] == GameObject.FOOD):
+                    row.append(0)
+                elif board[j][i] == GameObject.FOOD:
                     self.end = (i, j)
+                    row.append(0)
+                elif board[j][i] == GameObject.WALL:
+                    row.append(1)
+                if board[j][i] == GameObject.SNAKE_BODY:  # or  or board[i][j] == GameObject.SNAKE_HEAD
+                    self.body_parts += 1
+                    row.append(1)
             self.maze.append(row)
         print(self.start, self.end)
-        print(self.maze)
+        # print(self.maze)
 
-    def find_directions_from_path(self, direction, total_steps):
-        current = self.steps_done
+    # def find_directions_from_path(self, direction, total_steps):
+    #     # self.steps_done = 0
+    #     # while self.steps_done <= total_steps:
+    #     #     self.movements.append(self.look_for_next_step(direction, self.steps_done))
+    #     #     self.steps_done += 1
+    #     return self.look_for_next_step(direction, self.steps_done)
 
-
-
-
-        return None
-
-    def look_for_next_step(self, current_step):
+    def look_for_next_step(self, direction, current_step):
+        if self.switch != 0:
+            print("recalculating path")
+            self.switch = 0
+            self.recalculate_path()
+            current_step = 0
+        prev_location = ()
         location = ()
-        for i in range(0, self.board_width):
-            for j in range(0, self.board_height):
-                if self.path[i][j] == (current_step+1):
+        next_step = current_step + 1
+        for i in range(self.board_height):
+            for j in range(self.board_width):
+                if self.path[i][j] == next_step:
                     location = (i, j)
-
-
-
+                    if i == self.end[0] and j == self.end[1]:
+                        print("reached the end")
+                        self.recalculate_path()
+                        # return [Move.STRAIGHT]
+                elif self.path[i][j] == current_step:
+                    prev_location = (i, j)
+                if location != () and prev_location != ():
+                    if location[0] > prev_location[0]:
+                        print("should go down")
+                        print("snake heading " + str(direction))
+                        if direction == Direction.NORTH:  # This needs re-work
+                            if j > 0:
+                                self.switch == 1
+                                print("to the left possible")
+                                return [Move.LEFT, Move.LEFT]
+                            elif j < self.board_width:
+                                self.switch == 1
+                                print("to the right possible")
+                                return [Move.RIGHT, Move.RIGHT]
+                        elif direction == Direction.SOUTH:  # This needs re-work 2
+                            return [Move.STRAIGHT]
+                    elif location[0] < prev_location[0]:  # This needs re-work 3
+                        print("should go up")
+                        if direction == Direction.WEST:
+                            return [Move.RIGHT]
+                        elif direction == Direction.EAST:
+                            return [Move.LEFT]
+                        elif direction == Direction.SOUTH:
+                            print("rotate")
+                            # if j > 0:
+                            #     print("to the left possible")
+                            #     return [Move.LEFT, Move.LEFT]
+                            # elif j < 0:
+                            #     print("to the right possible")
+                            #     return [Move.RIGHT, Move.RIGHT]
+                        elif direction == Direction.NORTH:
+                            return [Move.STRAIGHT]
+                    elif location[1] < prev_location[1]:
+                        print("should go left")
+                        if direction == Direction.NORTH:
+                            return [Move.LEFT]
+                        elif direction == Direction.WEST:
+                            return [Move.STRAIGHT]
+                        elif direction == Direction.SOUTH:
+                            return [Move.LEFT]
+                        elif direction == Direction.EAST:
+                            print("rotate left")
+                    elif location[1] > prev_location[1]:
+                        print("should go right")
+                        if direction == Direction.NORTH:
+                            return [Move.RIGHT]
+                        elif direction == Direction.WEST:
+                            print("rotate right")
+                        elif direction == Direction.EAST:
+                            return [Move.STRAIGHT]
+                        elif direction == Direction.SOUTH:
+                            return [Move.RIGHT]
 
     def return_path(self, current_node):
         path = []
@@ -136,6 +230,7 @@ class Agent:
         # Return reversed path as we need to show from start to end path
         path = path[::-1]
         start_value = 0
+        print(path)
         # we update the path of start to end found by A-star serch with every step incremented by 1
         for i in range(len(path)):
             result[path[i][0]][path[i][1]] = start_value
@@ -143,21 +238,13 @@ class Agent:
         return result
 
     def search(self, cost, start, end):
-        print("Inside search, maze = "+str(self.maze))
-        # """
-        #     Returns a list of tuples as a path from the given start to the given end in the given maze
-        #     :param maze:
-        #     :param cost
-        #     :param start:
-        #     :param end:
-        #     :return:
-        # """
-        # test = [[0,0,1],
-        #         [1,0,0],
-        #         [1,0,0],
-        #         [0,0,1]]
-        # no_r = no_c = np.shape(test)
-        # print("no_r = "+str(no_r)+"; no_c = "+str(no_c))
+        """
+            Returns a list of tuples as a path from the given start to the given end in the given maze
+            :param cost
+            :param start:
+            :param end:
+            :return:
+        """
         # Create start and end node with initized values for g, h and f
         start_node = Node(None, tuple(start))
         start_node.g = start_node.h = start_node.f = 0
@@ -194,7 +281,7 @@ class Agent:
         while len(yet_to_visit_list) > 0:
             # Every time any node is referred from yet_to_visit list, counter of limit operation incremented
             outer_iterations += 1
-            print("in while loop")
+            # print("in while loop")
             # Get the current node
             current_node = yet_to_visit_list[0]
             current_index = 0
@@ -224,7 +311,7 @@ class Agent:
 
                 # Get node position
                 node_position = (
-                current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+                    current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
                 # Make sure within range (check if within maze boundary)
                 if (node_position[0] > (no_rows - 1) or
@@ -282,9 +369,11 @@ class Agent:
 
         :return: True if the snake should grow, False if the snake should not grow
         """
+        self.recalculate_path()
         return True
 
     def on_die(self, head_position, board, score, body_parts):
+        self.recalculate_path()
         """This function will be called whenever the snake dies. After its dead the snake will be reincarnated into a
         new snake and its life will start over. This means that the next time the get_move function is called,
         it will be called for a fresh snake. Use this function to clean up variables specific to the life of a single

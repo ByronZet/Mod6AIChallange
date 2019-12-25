@@ -9,7 +9,7 @@ scale = None
 canvas_width = 800
 canvas_height = 800
 
-tics_per_second = 4
+tics_per_second = 1
 previous_text_drawn = False
 
 """ BEGIN GAME SETTINGS """
