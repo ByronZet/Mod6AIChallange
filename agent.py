@@ -39,7 +39,7 @@ class Agent:
         """" Constructor of the Agent, can be used to set up variables """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):  # TODO: end point nu ii pe food, fix it
-        # self.create_maze_from_board(board, self.board_width, self.board_height)
+        self.create_maze_from_board(board, self.board_width, self.board_height)
         print("switch = " + str(self.switch))
         if self.path == [] and self.switch == 0:
             self.path = self.search(self.cost, self.start, self.end)
@@ -138,6 +138,7 @@ class Agent:
                     row.append(1)
             self.maze.append(row)
         print(self.start, self.end)
+        # self.path = self.search(self.cost, self.start, self.end)
         # print(self.maze)
 
     # def find_directions_from_path(self, direction, total_steps):
