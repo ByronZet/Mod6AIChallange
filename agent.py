@@ -20,6 +20,7 @@ class Node:
         return self.position == other.position
 
 
+# noinspection PyUnusedLocal,SpellCheckingInspection
 class Agent:
 
     def __init__(self):
@@ -38,13 +39,14 @@ class Agent:
         self.switch = 0
         """" Constructor of the Agent, can be used to set up variables """
 
-    def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):  # TODO: end point nu ii pe food, fix it
+    def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position,
+                 body_parts):  # TODO: end point nu ii pe food, fix it
         self.create_maze_from_board(board, self.board_width, self.board_height)
         print("switch = " + str(self.switch))
         if self.path == [] and self.switch == 0:
             self.path = self.search(self.cost, self.start, self.end)
-        else:
-            self.path = self.search(self.cost, self.start, self.end)
+        # else:
+        #   self.path = self.search(self.cost, self.start, self.end)
         total_steps = -2
         for i in range(0, self.board_width):
             for j in range(0, self.board_height):
@@ -54,18 +56,16 @@ class Agent:
                          for row in self.path]))
         # print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
         #                  for row in self.maze]))
-        if self.directions == [] and self.switch == 0:
-            self.directions = self.look_for_next_step(direction, self.steps_done)
-
+        # if self.directions == [] and self.switch == 0:
+        #     self.directions = self.look_for_next_step(direction, self.steps_done)
+        dir = self.look_for_next_step(direction, self.steps_done)
         print("dir = " + str(self.directions))
         if self.steps_done < total_steps:
             try:
-                temp = self.directions[0]
-                self.directions.pop(0)
+                self.steps_done += 1
+                return dir
             except:
                 print("something went wrong")
-            self.steps_done += 1
-            return temp
         return Move.STRAIGHT
 
         # noinspection PyUnreachableCode
@@ -149,75 +149,106 @@ class Agent:
     #     return self.look_for_next_step(direction, self.steps_done)
 
     def look_for_next_step(self, direction, current_step):
+        northcoord = {(-1, 0): Move.STRAIGHT, (0, 1): Move.RIGHT, (0, -1): Move.LEFT}
+        southcoord = {(1, 0): Move.STRAIGHT, (0, -1): Move.RIGHT, (0, 1): Move.LEFT}
+        eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
+        westcoord = {(0, -1): Move.STRAIGHT, (-1, 0): Move.RIGHT, (1, 0): Move.LEFT}
+        currentcoord = ()
+        if direction == direction.NORTH:
+            print("north")
+            currentcoord = northcoord
+        elif direction == direction.SOUTH:
+            print("south")
+            currentcoord = southcoord
+        elif direction == direction.EAST:
+            print("eadt")
+            currentcoord = eastcoord
+        elif currentcoord == direction.WEST:
+            print("west")
+            currentcoord = westcoord
         if self.switch != 0:
             print("recalculating path")
             self.switch = 0
             self.recalculate_path()
             current_step = 0
-        prev_location = ()
-        location = ()
+        present_location = ()
+        future_location = ()
         next_step = current_step + 1
+        print("Next step", direction)
+
         for i in range(self.board_height):
             for j in range(self.board_width):
                 if self.path[i][j] == next_step:
-                    location = (i, j)
+                    future_location = (i, j)
                     if i == self.end[0] and j == self.end[1]:
                         print("reached the end")
                         self.recalculate_path()
                         # return [Move.STRAIGHT]
                 elif self.path[i][j] == current_step:
-                    prev_location = (i, j)
-                if location != () and prev_location != ():
-                    if location[0] > prev_location[0]:
-                        print("should go down")
-                        print("snake heading " + str(direction))
-                        if direction == Direction.NORTH:  # This needs re-work
-                            if j > 0:
-                                self.switch == 1
-                                print("to the left possible")
-                                return [Move.LEFT, Move.LEFT]
-                            elif j < self.board_width:
-                                self.switch == 1
-                                print("to the right possible")
-                                return [Move.RIGHT, Move.RIGHT]
-                        elif direction == Direction.SOUTH:  # This needs re-work 2
-                            return [Move.STRAIGHT]
-                    elif location[0] < prev_location[0]:  # This needs re-work 3
-                        print("should go up")
-                        if direction == Direction.WEST:
-                            return [Move.RIGHT]
-                        elif direction == Direction.EAST:
-                            return [Move.LEFT]
-                        elif direction == Direction.SOUTH:
-                            print("rotate")
-                            # if j > 0:
-                            #     print("to the left possible")
-                            #     return [Move.LEFT, Move.LEFT]
-                            # elif j < 0:
-                            #     print("to the right possible")
-                            #     return [Move.RIGHT, Move.RIGHT]
-                        elif direction == Direction.NORTH:
-                            return [Move.STRAIGHT]
-                    elif location[1] < prev_location[1]:
-                        print("should go left")
-                        if direction == Direction.NORTH:
-                            return [Move.LEFT]
-                        elif direction == Direction.WEST:
-                            return [Move.STRAIGHT]
-                        elif direction == Direction.SOUTH:
-                            return [Move.LEFT]
-                        elif direction == Direction.EAST:
-                            print("rotate left")
-                    elif location[1] > prev_location[1]:
-                        print("should go right")
-                        if direction == Direction.NORTH:
-                            return [Move.RIGHT]
-                        elif direction == Direction.WEST:
-                            print("rotate right")
-                        elif direction == Direction.EAST:
-                            return [Move.STRAIGHT]
-                        elif direction == Direction.SOUTH:
-                            return [Move.RIGHT]
+                    present_location = (i, j)
+        presentX = present_location[0]
+        presentY = present_location[1]
+        futureX = future_location[0]
+        futureY = future_location[1]
+        print("Coordinates: ", presentX, " ", presentY, " ", futureX, " ", futureY)
+        print(currentcoord)
+        print("I face ", direction, "and I go ", (futureX - presentX), " ", (futureY - presentY), "to ",
+              future_location,
+              "by going ", currentcoord.get((futureX - presentX, futureY - presentY)))
+
+        return currentcoord.get((futureX - presentX, futureY - presentY))
+
+        # if future_location != () and present_location != ():
+        #     if future_location[0] > present_location[0]:
+        #         print("should go down")
+        #         print("snake heading " + str(direction))
+        #         if direction == Direction.NORTH:  # This needs re-work
+        #             if j > 0:
+        #                 self.switch == 1
+        #                 print("to the left possible")
+        #                 return [Move.LEFT, Move.LEFT]
+        #             elif j < self.board_width:
+        #                 self.switch == 1
+        #                 print("to the right possible")
+        #                 return [Move.RIGHT, Move.RIGHT]
+        #         elif direction == Direction.SOUTH:  # This needs re-work 2
+        #             return [Move.STRAIGHT]
+        #     elif future_location[0] < present_location[0]:  # This needs re-work 3
+        #         print("should go up")
+        #         if direction == Direction.WEST:
+        #             return [Move.RIGHT]
+        #         elif direction == Direction.EAST:
+        #             return [Move.LEFT]
+        #         elif direction == Direction.SOUTH:
+        #             print("rotate")
+        #             # if j > 0:
+        #             #     print("to the left possible")
+        #             #     return [Move.LEFT, Move.LEFT]
+        #             # elif j < 0:
+        #             #     print("to the right possible")
+        #             #     return [Move.RIGHT, Move.RIGHT]
+        #         elif direction == Direction.NORTH:
+        #             return [Move.STRAIGHT]
+        #     elif future_location[1] < present_location[1]:
+        #         print("should go left")
+        #         if direction == Direction.NORTH:
+        #             return [Move.LEFT]
+        #         elif direction == Direction.WEST:
+        #             return [Move.STRAIGHT]
+        #         elif direction == Direction.SOUTH:
+        #             return [Move.LEFT]
+        #         elif direction == Direction.EAST:
+        #             print("rotate left")
+        #     elif future_location[1] > present_location[1]:
+        #         print("should go right")
+        #         if direction == Direction.NORTH:
+        #             return [Move.RIGHT]
+        #         elif direction == Direction.WEST:
+        #             print("rotate right")
+        #         elif direction == Direction.EAST:
+        #             return [Move.STRAIGHT]
+        #         elif direction == Direction.SOUTH:
+        #             return [Move.RIGHT]
 
     def return_path(self, current_node):
         path = []

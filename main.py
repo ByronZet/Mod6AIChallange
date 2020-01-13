@@ -46,10 +46,10 @@ def main():
                   label="Turns Per Second")
     scale.set(tics_per_second)
     scale.bind("<ButtonRelease-1>", on_slider_update)
-    canvas.pack()
-    scale.pack(side=LEFT)
+    scale.pack(side=BOTTOM)
     b = Button(root, text="Next Step", command=callback)
-    b.pack()
+    b.pack(side=BOTTOM)
+    canvas.pack()
     snake = Snake(board_width, board_height, starvation_tics)
     board = Board(board_width, board_height, canvas_width, canvas_height, snake, food_blocks_max, wall_blocks_max,
                   test_config)
