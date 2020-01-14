@@ -42,7 +42,6 @@ class Agent:
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
         self.create_maze_from_board(board, self.board_width, self.board_height)
-        print("switch = " + str(self.switch))
 
         # if self.total_steps == self.steps_done and self.total_steps is not 0:
         #     self.switch = 0
@@ -51,14 +50,14 @@ class Agent:
         # elif self.switch == 0:
         #     self.switch = 1
         self.path = self.search(self.cost, self.start, self.end)
-
-        for i in range(0, self.board_height):
-            for j in range(0, self.board_width):
-                if self.path[i][j] > self.total_steps:
-                    self.total_steps = self.path[i][j]
-                    print("total steps and path[i][j]", self.total_steps, (i, j))
-        print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
-                         for row in self.path]))
+        if self.path is not None:
+            for i in range(0, self.board_height):
+                for j in range(0, self.board_width):
+                    if self.path[i][j] > self.total_steps:
+                        self.total_steps = self.path[i][j]
+            #             print("total steps and path[i][j]", self.total_steps, (i, j))
+            # print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
+            #                  for row in self.path]))
         # else:
         #   self.path = self.search(self.cost, self.start, self.end)
 
@@ -69,8 +68,8 @@ class Agent:
         dir = Move.STRAIGHT
         if self.total_steps > 0:
             dir = self.look_for_next_step(direction, self.steps_done)
-        print("dir = " + str(dir))
-        self.steps_done += 1
+        # print("dir = " + str(dir))
+        self.total_steps = 0
         return dir
 
         # noinspection PyUnreachableCode
@@ -139,19 +138,10 @@ class Agent:
                 elif board[j][i] == GameObject.WALL:
                     row.append(1)
                 if board[j][i] == GameObject.SNAKE_BODY:  # or  or board[i][j] == GameObject.SNAKE_HEAD
-                    self.body_parts += 1
+                    # self.body_parts += 1
                     row.append(1)
             self.maze.append(row)
-        print(self.start, self.end)
-        # self.path = self.search(self.cost, self.start, self.end)
-        # print(self.maze)
-
-    # def find_directions_from_path(self, direction, total_steps):
-    #     # self.steps_done = 0
-    #     # while self.steps_done <= total_steps:
-    #     #     self.movements.append(self.look_for_next_step(direction, self.steps_done))
-    #     #     self.steps_done += 1
-    #     return self.look_for_next_step(direction, self.steps_done)
+        # print(self.start, self.end)
 
     def look_for_next_step(self, direction, current_step):
         northcoord = {(-1, 0): Move.STRAIGHT, (0, 1): Move.RIGHT, (0, -1): Move.LEFT}
@@ -160,47 +150,38 @@ class Agent:
         westcoord = {(0, -1): Move.STRAIGHT, (-1, 0): Move.RIGHT, (1, 0): Move.LEFT}
         currentcoord = ()
         if direction == direction.NORTH:
-            print("north")
+            # print("north")
             currentcoord = northcoord
         elif direction == direction.SOUTH:
-            print("south")
+            # print("south")
             currentcoord = southcoord
         elif direction == direction.EAST:
-            print("east")
+            # print("east")
             currentcoord = eastcoord
-        elif currentcoord == direction.WEST:
-            print("west")
+        elif direction == direction.WEST:
+            # print("west")
             currentcoord = westcoord
-        # if self.switch != 0:
-        #     print("recalculating path")
-        #     self.switch = 0
-        #     self.recalculate_path()
-        #     current_step = 0
         present_location = ()
         future_location = ()
         next_step = 1
         current_step_local = 0
-        print("Next step", direction)
+        # print("Next step", direction)
 
         for i in range(self.board_height):
             for j in range(self.board_width):
-                # if i == self.end[0] and j == self.end[1]:  # ///
-                #     print("reached the end")
-                #     self.recalculate_path()
-                if self.path[i][j] == next_step:#///
+                if self.path[i][j] == next_step:
                     future_location = (i, j)
-                    # return [Move.STRAIGHT]
                 elif self.path[i][j] == current_step_local:
                     present_location = (i, j)
         presentX = present_location[0]
         presentY = present_location[1]
         futureX = future_location[0]
         futureY = future_location[1]
-        print("Coordinates: ", presentX, " ", presentY, " ", futureX, " ", futureY)
-        print(currentcoord)
-        print("I face ", direction, "and I go ", (futureX - presentX), " ", (futureY - presentY), "to ",
-              future_location,
-              "by going ", currentcoord.get((futureX - presentX, futureY - presentY)))
+        # print("Coordinates: ", presentX, " ", presentY, " ", futureX, " ", futureY)
+        # print(currentcoord)
+        # print("I face ", direction, "and I go ", (futureX - presentX), " ", (futureY - presentY), "to ",
+        #       future_location,
+        #       "by going ", currentcoord.get((futureX - presentX, futureY - presentY)))
 
         return currentcoord.get((futureX - presentX, futureY - presentY))
 
@@ -216,11 +197,12 @@ class Agent:
         # Return reversed path as we need to show from start to end path
         path = path[::-1]
         start_value = 0
-        print(path)
+        # print(path)
         # we update the path of start to end found by A-star serch with every step incremented by 1
-        for i in range(len(path)):
-            result[path[i][0]][path[i][1]] = start_value
-            start_value += 1
+        if path is not None:
+            for i in range(len(path)):
+                result[path[i][0]][path[i][1]] = start_value
+                start_value += 1
         return result
 
     def search(self, cost, start, end):
@@ -250,7 +232,8 @@ class Agent:
         # Adding a stop condition. This is to avoid any infinite loop and stop
         # execution after some reasonable number of steps
         outer_iterations = 0
-        max_iterations = (len(self.maze) // 2) ** 10
+        max_iterations = (len(self.maze) // 2) ** 3
+        # print(max_iterations)
 
         # what squares do we search . serarch movement is left-right-top-bottom
         # (4 movements) from every positon
