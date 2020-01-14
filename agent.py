@@ -22,7 +22,7 @@ class Node:
 
 # noinspection PyUnusedLocal,SpellCheckingInspection
 class Agent:
-
+    food_blocks_count = 2
     def __init__(self):
         self.maze = []
         self.start = []
@@ -31,44 +31,23 @@ class Agent:
         self.board = None
         self.board_width = None
         self.board_height = None
-        self.steps_done = 0
-        self.body_parts = 0
-        self.directions = []
         self.path = []
-        self.movements = []
         self.switch = 0
         self.total_steps = 0
+        self.steps_done = 0
         """" Constructor of the Agent, can be used to set up variables """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
         self.create_maze_from_board(board, self.board_width, self.board_height)
-
-        # if self.total_steps == self.steps_done and self.total_steps is not 0:
-        #     self.switch = 0
-        #     self.path = self.search(self.cost, self.start, self.end)
-        #     self.steps_done = 0
-        # elif self.switch == 0:
-        #     self.switch = 1
         self.path = self.search(self.cost, self.start, self.end)
         if self.path is not None:
             for i in range(0, self.board_height):
                 for j in range(0, self.board_width):
                     if self.path[i][j] > self.total_steps:
                         self.total_steps = self.path[i][j]
-            #             print("total steps and path[i][j]", self.total_steps, (i, j))
-            # print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
-            #                  for row in self.path]))
-        # else:
-        #   self.path = self.search(self.cost, self.start, self.end)
-
-        # print('\n'.join([''.join(["{:" ">3d}".format(item) for item in row])
-        #                  for row in self.maze]))
-        # if self.directions == [] and self.switch == 0:
-        #     self.directions = self.look_for_next_step(direction, self.steps_done)
         dir = Move.STRAIGHT
         if self.total_steps > 0:
-            dir = self.look_for_next_step(direction, self.steps_done)
-        # print("dir = " + str(dir))
+            dir = self.look_for_next_step(direction)
         self.total_steps = 0
         return dir
 
@@ -114,16 +93,15 @@ class Agent:
                 move left is made, the snake will go one block to the left and change its direction to west.
                 """
 
-    def recalculate_path(self):
-        self.create_maze_from_board(self.board, self.board_width, self.board_height)
-        self.path = self.search(self.cost, self.start, self.end)
-
     def create_maze_from_board(self, board, board_width, board_height):
         if self.board_width is None or self.board_height is None or self.board is None:
             self.board_width = board_width
             self.board_height = board_height
             self.board = board
         self.maze = []
+        end_points = [(0, 0) for x in range(self.food_blocks_count)]
+        # print(end_points)
+        index = 0
         for i in range(board_height):
             row = []
             for j in range(board_width):
@@ -133,7 +111,8 @@ class Agent:
                     self.start = (i, j)
                     row.append(0)
                 elif board[j][i] == GameObject.FOOD:
-                    self.end = (i, j)
+                    end_points[index] = (i, j)
+                    index += 1
                     row.append(0)
                 elif board[j][i] == GameObject.WALL:
                     row.append(1)
@@ -141,9 +120,19 @@ class Agent:
                     # self.body_parts += 1
                     row.append(1)
             self.maze.append(row)
+        distances = [(np.abs(self.start[0] - end_points[x][0]), np.abs(self.start[1] - end_points[x][1])) for x in range(len(end_points))]
+        # print("distances: ", distances)
+        min_i = np.inf
+        min_j = np.inf
+        for i in range(len(distances)):
+            if distances[i][0] < min_i and distances[i][1] < min_j:
+                min_i = distances[i][0]
+                min_j = distances[i][1]
+                index = i
+        self.end = (end_points[index][0], end_points[index][1])
         # print(self.start, self.end)
 
-    def look_for_next_step(self, direction, current_step):
+    def look_for_next_step(self, direction):
         northcoord = {(-1, 0): Move.STRAIGHT, (0, 1): Move.RIGHT, (0, -1): Move.LEFT}
         southcoord = {(1, 0): Move.STRAIGHT, (0, -1): Move.RIGHT, (0, 1): Move.LEFT}
         eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
@@ -338,11 +327,9 @@ class Agent:
 
         :return: True if the snake should grow, False if the snake should not grow
         """
-        self.recalculate_path()
         return True
 
     def on_die(self, head_position, board, score, body_parts):
-        self.recalculate_path()
         """This function will be called whenever the snake dies. After its dead the snake will be reincarnated into a
         new snake and its life will start over. This means that the next time the get_move function is called,
         it will be called for a fresh snake. Use this function to clean up variables specific to the life of a single
