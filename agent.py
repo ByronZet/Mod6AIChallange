@@ -22,7 +22,7 @@ class Node:
 
 # noinspection PyUnusedLocal,SpellCheckingInspection
 class Agent:
-    food_blocks_count = 2
+    food_blocks_count = 6
     def __init__(self):
         self.maze = []
         self.start = []
@@ -35,9 +35,12 @@ class Agent:
         self.switch = 0
         self.total_steps = 0
         self.steps_done = 0
+        self.body_parts = 0
+        self.turn = 0
         """" Constructor of the Agent, can be used to set up variables """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
+        self.body_parts = body_parts
         self.create_maze_from_board(board, self.board_width, self.board_height)
         self.path = self.search(self.cost, self.start, self.end)
         if self.path is not None:
@@ -102,17 +105,20 @@ class Agent:
         end_points = [(0, 0) for x in range(self.food_blocks_count)]
         # print(end_points)
         index = 0
+        at_i = -1
+        at_j = -1
         for i in range(board_height):
             row = []
             for j in range(board_width):
                 if board[j][i] == GameObject.EMPTY:
                     row.append(0)
                 elif board[j][i] == GameObject.SNAKE_HEAD:
+                    at_i = i+1
+                    at_j = j
                     self.start = (i, j)
                     row.append(0)
                 elif board[j][i] == GameObject.FOOD:
-                    end_points[index] = (i, j)
-                    index += 1
+                    end_points[++index] = (i, j)
                     row.append(0)
                 elif board[j][i] == GameObject.WALL:
                     row.append(1)
@@ -120,6 +126,9 @@ class Agent:
                     # self.body_parts += 1
                     row.append(1)
             self.maze.append(row)
+        if self.turn == 0 and at_i is not -1 and at_j is not -1:
+            self.turn = 1
+            self.maze[at_i][at_j] = 1
         distances = [(np.abs(self.start[0] - end_points[x][0]), np.abs(self.start[1] - end_points[x][1])) for x in range(len(end_points))]
         # print("distances: ", distances)
         min_i = np.inf
@@ -221,7 +230,7 @@ class Agent:
         # Adding a stop condition. This is to avoid any infinite loop and stop
         # execution after some reasonable number of steps
         outer_iterations = 0
-        max_iterations = (len(self.maze) // 2) ** 3
+        max_iterations = 2000
         # print(max_iterations)
 
         # what squares do we search . serarch movement is left-right-top-bottom
@@ -251,7 +260,7 @@ class Agent:
             # if we hit this point return the path such as it may be no solution or
             # computation cost is too high
             if outer_iterations > max_iterations:
-                print("giving up on pathfinding too many iterations")
+                # print("giving up on pathfinding too many iterations")
                 return self.return_path(current_node)
 
             # Pop current node out off yet_to_visit list, add to visited list
