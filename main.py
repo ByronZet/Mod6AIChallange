@@ -17,11 +17,11 @@ previous_text_drawn = False
 board_width = 25
 board_height = 25
 # Maximum number of food blocks on the board
-food_blocks_max = 1
+food_blocks_max = 6
 # Maximum number of wall blocks on the board
 wall_blocks_max = 1
 # Indicates whether the test setup need to be used, turn to false to use the wall_blocks_max for spawning random walls
-test_config = True
+test_config = False
 # Number of turns to starve, -1 for disabled
 starvation_tics = -1
 # indicates whether when not redrawing the board, the score should be printed to the console.
@@ -54,6 +54,7 @@ def main():
     board = Board(board_width, board_height, canvas_width, canvas_height, snake, food_blocks_max, wall_blocks_max,
                   test_config)
     snake.agent.create_maze_from_board(board.get_copy(), board_width, board_height)
+    snake.agent.food_blocks_count = food_blocks_max
     board.draw(canvas)
     canvas.after(int(1000 / tics_per_second), game_loop)
     mainloop()
