@@ -22,7 +22,8 @@ class Node:
 
 # noinspection PyUnusedLocal,SpellCheckingInspection
 class Agent:
-    food_blocks_count = 6
+    food_blocks_count = 1
+
     def __init__(self):
         self.maze = []
         self.start = []
@@ -37,22 +38,49 @@ class Agent:
         self.steps_done = 0
         self.body_parts = 0
         self.turn = 0
+        self.endpoints = []
+        self.max_ierations = -1;
+        self.last_found_path=[]
         """" Constructor of the Agent, can be used to set up variables """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
         self.body_parts = body_parts
         self.create_maze_from_board(board, self.board_width, self.board_height)
-        self.path = self.search(self.cost, self.start, self.end)
-        if self.path is not None:
-            for i in range(0, self.board_height):
-                for j in range(0, self.board_width):
-                    if self.path[i][j] > self.total_steps:
-                        self.total_steps = self.path[i][j]
-        dir = Move.STRAIGHT
-        if self.total_steps > 0:
-            dir = self.look_for_next_step(direction)
-        self.total_steps = 0
+        path = self.get_best_path()
+        self.last_found_path = path
+        dir = self.look_for_next_step(direction, path)
         return dir
+
+    # calculates steps for a given path
+    def calculate_steps(self, path):
+        total_steps = 0;
+        for i in range(0, self.board_height):
+            for j in range(0, self.board_width):
+                if path[i][j] > total_steps:
+                    total_steps = path[i][j]
+        return total_steps
+
+    def get_best_path(self):
+        least_steps = float("inf")
+        std_iteration = float("inf")
+        bestPath = []
+        for food in self.endpoints:
+            path_to_food = self.search(self.cost, self.start, food, std_iteration)
+            if std_iteration > self.max_ierations:
+                std_iteration = self.max_ierations
+            current_steps = float("inf")
+            if path_to_food is not None:
+                current_steps = self.calculate_steps(path_to_food)
+            if current_steps < least_steps:
+                least_steps = current_steps
+                bestPath = path_to_food
+
+        self.max_ierations = 0;
+        if(bestPath == []):
+            print("No path")
+            return self.last_found_path
+        return bestPath
+
 
         # noinspection PyUnreachableCode
         """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -113,12 +141,13 @@ class Agent:
                 if board[j][i] == GameObject.EMPTY:
                     row.append(0)
                 elif board[j][i] == GameObject.SNAKE_HEAD:
-                    at_i = i+1
+                    at_i = i + 1
                     at_j = j
                     self.start = (i, j)
                     row.append(0)
                 elif board[j][i] == GameObject.FOOD:
-                    end_points[++index] = (i, j)
+                    end_points[index] = (i, j)
+                    index+=1
                     row.append(0)
                 elif board[j][i] == GameObject.WALL:
                     row.append(1)
@@ -129,19 +158,21 @@ class Agent:
         if self.turn == 0 and at_i is not -1 and at_j is not -1:
             self.turn = 1
             self.maze[at_i][at_j] = 1
-        distances = [(np.abs(self.start[0] - end_points[x][0]), np.abs(self.start[1] - end_points[x][1])) for x in range(len(end_points))]
+        # distances = [(np.abs(self.start[0] - end_points[x][0]), np.abs(self.start[1] - end_points[x][1]))
+        # for x in range(len(end_points))]
         # print("distances: ", distances)
-        min_i = np.inf
-        min_j = np.inf
-        for i in range(len(distances)):
-            if distances[i][0] < min_i and distances[i][1] < min_j:
-                min_i = distances[i][0]
-                min_j = distances[i][1]
-                index = i
-        self.end = (end_points[index][0], end_points[index][1])
+        # min_i = np.inf
+        # min_j = np.inf
+        # for i in range(len(distances)):
+        #     if distances[i][0] < min_i and distances[i][1] < min_j:
+        #         min_i = distances[i][0]
+        #         min_j = distances[i][1]
+        #         index = i
+        # self.end = (end_points[index][0], end_points[index][1])
+        self.endpoints = end_points
         # print(self.start, self.end)
 
-    def look_for_next_step(self, direction):
+    def look_for_next_step(self, direction, path):
         northcoord = {(-1, 0): Move.STRAIGHT, (0, 1): Move.RIGHT, (0, -1): Move.LEFT}
         southcoord = {(1, 0): Move.STRAIGHT, (0, -1): Move.RIGHT, (0, 1): Move.LEFT}
         eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
@@ -167,9 +198,9 @@ class Agent:
 
         for i in range(self.board_height):
             for j in range(self.board_width):
-                if self.path[i][j] == next_step:
+                if path[i][j] == next_step:
                     future_location = (i, j)
-                elif self.path[i][j] == current_step_local:
+                elif path[i][j] == current_step_local:
                     present_location = (i, j)
         presentX = present_location[0]
         presentY = present_location[1]
@@ -203,7 +234,7 @@ class Agent:
                 start_value += 1
         return result
 
-    def search(self, cost, start, end):
+    def search(self, cost, start, end, std_iterations):
         """
             Returns a list of tuples as a path from the given start to the given end in the given maze
             :param cost
@@ -230,7 +261,7 @@ class Agent:
         # Adding a stop condition. This is to avoid any infinite loop and stop
         # execution after some reasonable number of steps
         outer_iterations = 0
-        max_iterations = 2000
+        max_iterations = 1500
         # print(max_iterations)
 
         # what squares do we search . serarch movement is left-right-top-bottom
@@ -259,6 +290,9 @@ class Agent:
 
             # if we hit this point return the path such as it may be no solution or
             # computation cost is too high
+            if outer_iterations > std_iterations:
+                return None
+
             if outer_iterations > max_iterations:
                 # print("giving up on pathfinding too many iterations")
                 return self.return_path(current_node)
@@ -269,10 +303,14 @@ class Agent:
 
             # test if goal is reached or not, if yes then return the path
             if current_node == end_node:
+                self.max_ierations = outer_iterations
+                print(outer_iterations)
                 return self.return_path(current_node)
 
             # Generate children from all adjacent squares
             children = []
+
+
 
             for new_position in move:
 
