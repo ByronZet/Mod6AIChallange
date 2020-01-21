@@ -19,6 +19,8 @@ class Agent:
 
     def __init__(self):
         self.cost = 1
+        self.start = None
+        self.end = None
         """" Constructor of the Agent, can be used to set up variables """
 
     """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -63,6 +65,9 @@ class Agent:
             """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
+        self.find_start_end_points(board)
+        path = self.A_search(self.start, self.end, board)
+        print("path = ", path)
         return Move.STRAIGHT
 
     def A_search(self, start, end, board):
@@ -75,21 +80,21 @@ class Agent:
         g_score = defaultdict(lambda : np.inf)
         g_score[start_node] = 0
         f_score[start_node] = np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])
-
         iterations = 0
-        max_iterations = np.shape(board)[0] ** 2
+        max_iterations = 2000
         while len(open_set) > 0:
             iterations += 1
-
+            # print(iterations)
             current_node = None
             min = np.inf
 
             for x in open_set:
-                if x.f < min:
+                if f_score[x] < min:
                     current_node = x
-                    min = x.f
+                    min = f_score[x]
 
             if current_node.position == end_node.position:
+                print("found path")
                 return self.reconstruct_path(cameFrom, current_node)
 
             if iterations > max_iterations:
@@ -98,42 +103,43 @@ class Agent:
 
             open_set.remove(current_node)
             neighbours = self.find_neighbours(current_node, board) # list of coordinates , eg (2,2)
-
+            # print(neighbours)
             for x in neighbours:
-                test_gScore = g_score.get(current_node) + self.cost
-                if test_gScore < g_score.get(x):
+                test_gScore = g_score[current_node] + self.cost
+                if test_gScore < g_score[x]:
                     cameFrom[x] = current_node
                     g_score[x] = test_gScore
                     f_score[x] = g_score[x] + np.abs(x.position[0] - end_node.position[0]) + np.abs(x.position[1] - end_node.position[1])
                     if x not in open_set:
                         open_set.append(x)
-
+        print("did not find path")
         return None
 
     def reconstruct_path(self, came_from, current):
-        path = [current.position]
+        path = []
         while current in came_from.keys():
             path.append(current.position)
             current = came_from[current]
-        return path.reverse()
+        result = path[::-1]
+        return result
 
+    def find_start_end_points(self, board):
+        for i in range(np.shape(board)[0]):
+            for j in range(np.shape(board)[1]):
+                if board[i][j] == GameObject.SNAKE_HEAD:
+                    self.start = (i, j)
+                elif board[i][j] == GameObject.FOOD:
+                    self.end = (i, j)
 
     def find_neighbours(self, node, board):
         result = []
-        directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+        directions = [[1, 0], [-1, 0], [0, 1], [0, -1]] # [1, 1], [-1, -1], [1, -1], [-1, 1]
         for k in directions:
             x = node.position[0] + k[0]
             y = node.position[1] + k[1]
-            if (0 <= x < 25 and 0 <= y < 25) and board[x][y] == (GameObject.FOOD or GameObject.EMPTY):
-                result.append(Node(x, y))
+            if (0 <= x < 25 and 0 <= y < 25) and (board[x][y] == GameObject.FOOD or board[x][y] == GameObject.EMPTY):
+                result.append(Node((x, y)))
         return result
-
-
-
-
-        
-
-
 
     def should_redraw_board(self):
         """
