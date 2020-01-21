@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 
 from gameobjects import GameObject
@@ -8,14 +10,15 @@ class Node:
     def __init__(self, position):
         self.parent = None
         self.position = position
-        self.g = -1
-        self.h = -1
-        self.f = -1
+        self.g = 0
+        self.h = 0
+        self.f = 0
 
 
 class Agent:
 
     def __init__(self):
+        self.cost = 1
         """" Constructor of the Agent, can be used to set up variables """
 
     """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -60,27 +63,74 @@ class Agent:
             """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
-        mata = (6,6)
-        print(head_position)
         return Move.STRAIGHT
 
-    def search(self, board, start):
-        open_list = []
-        closed_list = []
+    def A_search(self, start, end, board):
+        open_set = []
         start_node = Node(start)
-        start_node.f = 0
-        open_list.append(start_node)
-        food = []
-        for i in range(np.shape(board)[0]):
-            for j in range(np.shape(board)[1]):
-                if board[i][j] == GameObject.FOOD:
-                    food.append(tuple(i, j))
-        q = start_node
-        while open_list:
-            for i in range(len(open_list)):
-                if open_list[i].f < q.f:
-                    q = open_list[i]
-        open_list.pop(q)
+        end_node = Node(end)
+        open_set.append(start_node)
+        cameFrom = dict()
+        f_score = defaultdict(lambda : np.inf)
+        g_score = defaultdict(lambda : np.inf)
+        g_score[start_node] = 0
+        f_score[start_node] = np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])
+
+        iterations = 0
+        max_iterations = np.shape(board)[0] ** 2
+        while len(open_set) > 0:
+            iterations += 1
+
+            current_node = None
+            min = np.inf
+
+            for x in open_set:
+                if x.f < min:
+                    current_node = x
+                    min = x.f
+
+            if current_node.position == end_node.position:
+                return self.reconstruct_path(cameFrom, current_node)
+
+            if iterations > max_iterations:
+                print("too many iterations, giving up")
+                return self.reconstruct_path(cameFrom, current_node)
+
+            open_set.remove(current_node)
+            neighbours = self.find_neighbours(current_node, board) # list of coordinates , eg (2,2)
+
+            for x in neighbours:
+                test_gScore = g_score.get(current_node) + self.cost
+                if test_gScore < g_score.get(x):
+                    cameFrom[x] = current_node
+                    g_score[x] = test_gScore
+                    f_score[x] = g_score[x] + np.abs(x.position[0] - end_node.position[0]) + np.abs(x.position[1] - end_node.position[1])
+                    if x not in open_set:
+                        open_set.append(x)
+
+        return None
+
+    def reconstruct_path(self, came_from, current):
+        path = [current.position]
+        while current in came_from.keys():
+            path.append(current.position)
+            current = came_from[current]
+        return path.reverse()
+
+
+    def find_neighbours(self, node, board):
+        result = []
+        directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+        for k in directions:
+            x = node.position[0] + k[0]
+            y = node.position[1] + k[1]
+            if (0 <= x < 25 and 0 <= y < 25) and board[x][y] == (GameObject.FOOD or GameObject.EMPTY):
+                result.append(Node(x, y))
+        return result
+
+
+
+
         
 
 
