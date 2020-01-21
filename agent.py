@@ -65,10 +65,27 @@ class Agent:
             """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
+        print(head_position)
+        northcoord = {(-1, 0): Move.STRAIGHT, (0, 1): Move.RIGHT, (0, -1): Move.LEFT}
+        southcoord = {(1, 0): Move.STRAIGHT, (0, -1): Move.RIGHT, (0, 1): Move.LEFT}
+        eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
+        westcoord = {(0, -1): Move.STRAIGHT, (-1, 0): Move.RIGHT, (1, 0): Move.LEFT}
+        dic_of_dics = {Direction.NORTH: northcoord, Direction.SOUTH: southcoord, Direction.WEST: westcoord, Direction.EAST: eastcoord}
         self.find_start_end_points(board)
         path = self.A_search(self.start, self.end, board)
-        print("path = ", path)
-        return Move.STRAIGHT
+
+        next = path[0]
+        futx = next[0]
+        futy = next[1]
+        curx = head_position[0]
+        cury = head_position[1]
+        print("Sunt in mama lui cristi la directia ", direction, "si ma duc sa-mi bag pula in ea prin ", futx, " ",futy, "iar eu sun la", curx, " ", cury)
+        move = dic_of_dics[direction][(futx - curx, futy - cury)]
+        print(path)
+        print(move)
+        return move
+
+
 
     def A_search(self, start, end, board):
         open_set = []
@@ -93,7 +110,7 @@ class Agent:
                     current_node = x
                     min = f_score[x]
 
-            if current_node.position == end_node.position:
+            if current_node.position == end_node.position or current_node.position==GameObject.FOOD:
                 print("found path")
                 return self.reconstruct_path(cameFrom, current_node)
 
