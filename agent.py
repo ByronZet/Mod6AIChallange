@@ -22,6 +22,7 @@ class Agent:
         self.start = None
         self.end = None
         self.path = []
+        self.node_list = []
         """" Constructor of the Agent, can be used to set up variables """
 
     """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -72,13 +73,12 @@ class Agent:
         eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
         westcoord = {(0, -1): Move.STRAIGHT, (-1, 0): Move.RIGHT, (1, 0): Move.LEFT}
         dic_of_dics = {Direction.NORTH: northcoord, Direction.SOUTH: southcoord, Direction.WEST: westcoord, Direction.EAST: eastcoord}
+        self.find_start_end_points(board)
+        self.path = self.A_search(self.start, self.end, board)
         if not self.path:
-            self.find_start_end_points(board)
-            self.path = self.A_search(self.start, self.end, board)
-            if not self.path:
-                self.path = self.best_first(self.start, board)
-            if not self.path:
-                return Move.STRAIGHT
+            self.path = self.best_first(self.start, board)
+        if not self.path:
+            return Move.STRAIGHT
 
 
         next = self.path[0]
@@ -118,9 +118,9 @@ class Agent:
         f_score = defaultdict(lambda : np.inf)
         g_score = defaultdict(lambda : np.inf)
         g_score[start_node] = 0
-        f_score[start_node] = self.euclidian(start, end)
+        f_score[start_node] = self.manhattan(start, end)
         iterations = 0
-        max_iterations = 2500
+        max_iterations = 5000
         while len(open_set) > 0:
             iterations += 1
             # print(iterations)
@@ -140,17 +140,23 @@ class Agent:
                 print("too many iterations, giving up")
                 # return self.reconstruct_path(cameFrom, current_node)
                 return self.best_first(self.start, board)
-
             open_set.remove(current_node)
+            print(len(open_set))
             neighbours = self.find_neighbours(current_node, board) # list of coordinates , eg (2,2)
             # print(neighbours)
             for x in neighbours:
+                add = True
                 test_gScore = g_score[current_node] + self.cost
                 if test_gScore < g_score[x]:
                     cameFrom[x] = current_node
                     g_score[x] = test_gScore
-                    f_score[x] = g_score[x] + self.euclidian(x.position, end_node.position)
-                    if x not in open_set:
+                    f_score[x] = g_score[x] + self.manhattan(x.position, end_node.position)
+                    for set_node in open_set:
+                        if set_node.position == x.position:
+                            add = False
+                    # if x not in open_set:
+                    #     open_set.append(x)
+                    if add:
                         open_set.append(x)
         print("did not find path")
         return None
@@ -174,7 +180,7 @@ class Agent:
         for i in range(np.shape(board)[1]):
             for j in range(np.shape(board)[0]):
                 if board[i][j] == GameObject.FOOD:
-                    this_cost = self.euclidian(self.start, (i, j))
+                    this_cost = self.manhattan(self.start, (i, j))
                     if this_cost < cost:
                         cost = this_cost
                         self.end = (i, j)
@@ -202,7 +208,7 @@ class Agent:
         path = []
         next_coord = None
         for node in neighbours:
-            node_distance = self.euclidian(node.position, self.end)
+            node_distance = self.manhattan(node.position, self.end)
             if node_distance < shortest_distance:
                 shortest_distance = node_distance
                 next_coord = node.position
