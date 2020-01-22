@@ -23,6 +23,7 @@ class Agent:
         self.end = None
         self.path = []
         self.node_list = []
+        self.score = 0
         """" Constructor of the Agent, can be used to set up variables """
 
     """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -67,7 +68,10 @@ class Agent:
             """
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
-        print(head_position)
+        # print(head_position)
+        if self.score < score:
+            print("New score: ", score)
+            self.score = score
         northcoord = {(-1, 0): Move.STRAIGHT, (0, 1): Move.RIGHT, (0, -1): Move.LEFT}
         southcoord = {(1, 0): Move.STRAIGHT, (0, -1): Move.RIGHT, (0, 1): Move.LEFT}
         eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
@@ -82,9 +86,9 @@ class Agent:
 
 
         next = self.path[0]
-        print("path initial", self.path)
+        # print("path initial", self.path)
         if board[next[0]][next[1]] != GameObject.EMPTY and board[next[0]][next[1]] != GameObject.FOOD:
-            print("Asta is eu si ma feresc")
+            # print("Asta is eu si ma feresc")
             self.find_start_end_points(board)
             self.path = self.A_search(self.start, self.end, board)
             if not self.path:
@@ -92,19 +96,23 @@ class Agent:
             if not self.path:
                 return Move.STRAIGHT
             next = self.path[0]
-            print("Ni path nou ", self.path)
+            # print("Ni path nou ", self.path)
         self.path.pop(0)
-        print("Obiectu care merg: ", board[next[0]][next[1]])
+        # print("Obiectu care merg: ", board[next[0]][next[1]])
         futx = next[1]
         futy = next[0]
         curx = head_position[1]
         cury = head_position[0]
-        print("Sunt in mama lui cristi la directia ", direction, "si ma duc sa-mi bag pula in ea prin ", futy, " ",futx, "iar eu sun la", cury, " ", curx)
-        print("Astea mi-s coordonatele: ", futx - curx, futy - cury)
+        # print("Sunt in mama lui cristi la directia ", direction, "si ma duc sa-mi bag pula in ea prin ", futy, " ",futx, "iar eu sun la", cury, " ", curx)
+        # print("Astea mi-s coordonatele: ", futx - curx, futy - cury)
         dir_dic = dic_of_dics[direction]
         move_coord = (futx - curx, futy - cury)
-        move = dir_dic[(futx - curx, futy - cury)]
-        print(move)
+        try:
+            move = dir_dic[(futx - curx, futy - cury)]
+        except KeyError:
+            print("Caught KeyError, returning Move.STRAIGHT")
+            return Move.STRAIGHT
+        # print(move)
         return move
 
 
@@ -133,7 +141,7 @@ class Agent:
                     min = f_score[x]
 
             if current_node.position == end_node.position or current_node.position==GameObject.FOOD:
-                print("found path")
+                # print("found path")
                 return self.reconstruct_path(cameFrom, current_node)
 
             if iterations > max_iterations:
@@ -141,7 +149,7 @@ class Agent:
                 # return self.reconstruct_path(cameFrom, current_node)
                 return self.best_first(self.start, board)
             open_set.remove(current_node)
-            print(len(open_set))
+            # print(len(open_set))
             neighbours = self.find_neighbours(current_node, board) # list of coordinates , eg (2,2)
             # print(neighbours)
             for x in neighbours:
@@ -215,7 +223,7 @@ class Agent:
         if next_coord:
             path.append(next_coord)
 
-        print("fac best first si merg la: ", path)
+        # print("fac best first si merg la: ", path)
         return path
 
     def should_redraw_board(self):
