@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
-
+import math
 from gameobjects import GameObject
 from move import Move, Direction
 
@@ -21,6 +21,7 @@ class Agent:
         self.cost = 1
         self.start = None
         self.end = None
+        self.path = []
         """" Constructor of the Agent, can be used to set up variables """
 
     """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -71,17 +72,38 @@ class Agent:
         eastcoord = {(0, 1): Move.STRAIGHT, (1, 0): Move.RIGHT, (-1, 0): Move.LEFT}
         westcoord = {(0, -1): Move.STRAIGHT, (-1, 0): Move.RIGHT, (1, 0): Move.LEFT}
         dic_of_dics = {Direction.NORTH: northcoord, Direction.SOUTH: southcoord, Direction.WEST: westcoord, Direction.EAST: eastcoord}
-        self.find_start_end_points(board)
-        path = self.A_search(self.start, self.end, board)
+        if not self.path:
+            self.find_start_end_points(board)
+            self.path = self.A_search(self.start, self.end, board)
+            if not self.path:
+                self.path = self.best_first(self.start, board)
+            if not self.path:
+                return Move.STRAIGHT
 
-        next = path[0]
-        futx = next[0]
-        futy = next[1]
-        curx = head_position[0]
-        cury = head_position[1]
-        print("Sunt in mama lui cristi la directia ", direction, "si ma duc sa-mi bag pula in ea prin ", futx, " ",futy, "iar eu sun la", curx, " ", cury)
-        move = dic_of_dics[direction][(futx - curx, futy - cury)]
-        print(path)
+
+        next = self.path[0]
+        print("path initial", self.path)
+        if board[next[0]][next[1]] != GameObject.EMPTY and board[next[0]][next[1]] != GameObject.FOOD:
+            print("Asta is eu si ma feresc")
+            self.find_start_end_points(board)
+            self.path = self.A_search(self.start, self.end, board)
+            if not self.path:
+                self.path = self.best_first(self.start, board)
+            if not self.path:
+                return Move.STRAIGHT
+            next = self.path[0]
+            print("Ni path nou ", self.path)
+        self.path.pop(0)
+        print("Obiectu care merg: ", board[next[0]][next[1]])
+        futx = next[1]
+        futy = next[0]
+        curx = head_position[1]
+        cury = head_position[0]
+        print("Sunt in mama lui cristi la directia ", direction, "si ma duc sa-mi bag pula in ea prin ", futy, " ",futx, "iar eu sun la", cury, " ", curx)
+        print("Astea mi-s coordonatele: ", futx - curx, futy - cury)
+        dir_dic = dic_of_dics[direction]
+        move_coord = (futx - curx, futy - cury)
+        move = dir_dic[(futx - curx, futy - cury)]
         print(move)
         return move
 
@@ -96,9 +118,9 @@ class Agent:
         f_score = defaultdict(lambda : np.inf)
         g_score = defaultdict(lambda : np.inf)
         g_score[start_node] = 0
-        f_score[start_node] = np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])
+        f_score[start_node] = self.euclidian(start, end)
         iterations = 0
-        max_iterations = 2000
+        max_iterations = 2500
         while len(open_set) > 0:
             iterations += 1
             # print(iterations)
@@ -116,7 +138,8 @@ class Agent:
 
             if iterations > max_iterations:
                 print("too many iterations, giving up")
-                return self.reconstruct_path(cameFrom, current_node)
+                # return self.reconstruct_path(cameFrom, current_node)
+                return self.best_first(self.start, board)
 
             open_set.remove(current_node)
             neighbours = self.find_neighbours(current_node, board) # list of coordinates , eg (2,2)
@@ -126,7 +149,7 @@ class Agent:
                 if test_gScore < g_score[x]:
                     cameFrom[x] = current_node
                     g_score[x] = test_gScore
-                    f_score[x] = g_score[x] + np.abs(x.position[0] - end_node.position[0]) + np.abs(x.position[1] - end_node.position[1])
+                    f_score[x] = g_score[x] + self.euclidian(x.position, end_node.position)
                     if x not in open_set:
                         open_set.append(x)
         print("did not find path")
@@ -141,12 +164,20 @@ class Agent:
         return result
 
     def find_start_end_points(self, board):
-        for i in range(np.shape(board)[0]):
-            for j in range(np.shape(board)[1]):
+        cost = np.inf
+        for i in range(np.shape(board)[1]):
+            for j in range(np.shape(board)[0]):
                 if board[i][j] == GameObject.SNAKE_HEAD:
                     self.start = (i, j)
-                elif board[i][j] == GameObject.FOOD:
-                    self.end = (i, j)
+                    break
+
+        for i in range(np.shape(board)[1]):
+            for j in range(np.shape(board)[0]):
+                if board[i][j] == GameObject.FOOD:
+                    this_cost = self.euclidian(self.start, (i, j))
+                    if this_cost < cost:
+                        cost = this_cost
+                        self.end = (i, j)
 
     def find_neighbours(self, node, board):
         result = []
@@ -157,6 +188,29 @@ class Agent:
             if (0 <= x < 25 and 0 <= y < 25) and (board[x][y] == GameObject.FOOD or board[x][y] == GameObject.EMPTY):
                 result.append(Node((x, y)))
         return result
+
+    def manhattan(self, start, end):
+        return np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])
+
+    def euclidian(self, start, end):
+        return math.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2)
+
+    def best_first(self, start, board):
+        start_node = Node(start)
+        neighbours = self.find_neighbours(start_node, board)
+        shortest_distance = np.inf
+        path = []
+        next_coord = None
+        for node in neighbours:
+            node_distance = self.euclidian(node.position, self.end)
+            if node_distance < shortest_distance:
+                shortest_distance = node_distance
+                next_coord = node.position
+        if next_coord:
+            path.append(next_coord)
+
+        print("fac best first si merg la: ", path)
+        return path
 
     def should_redraw_board(self):
         """
